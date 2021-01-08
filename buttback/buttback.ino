@@ -1,9 +1,12 @@
 #define INPUTMODE INPUT_PULLUP    // INPUT or INPUT_PULLUP
 #define BOUNCETIME 50              // bouncing time in milliseconds
-byte buttonPins[]={2, 3};// pin numbers of all buttons
+byte buttonPins[]={2, 3, 4, 5, 6, 7, 8, 9, 10, 11};// pin numbers of all buttons
 #define NUMBUTTONS sizeof(buttonPins) // number of buttons (automatically calculated)
 byte buttonState[NUMBUTTONS];  // array holds the actual HIGH/LOW states
 byte buttonChange[NUMBUTTONS]; // array holds the state changes when button is pressed or released
+long startIntervals[NUMBUTTONS];
+long endIntervals[NUMBUTTONS];
+//String toPublish[NUMBUTTONS];
 enum{UNCHANGED,BUTTONUP,BUTTONDOWN};
 
 const int tillBuzz = 10;
@@ -26,8 +29,16 @@ void input(){
     if (INPUTMODE==INPUT_PULLUP) curState=!curState; // logic is inverted with INPUT_PULLUP
     if (curState!=buttonState[i])                    // state change detected
     {
-      if (curState==HIGH) buttonChange[i]=BUTTONDOWN;
-      else buttonChange[i]=BUTTONUP;
+      if (curState==LOW) 
+      {
+        startIntervals[i] = millis();
+        buttonChange[i]=BUTTONUP;
+      }
+      else 
+      {
+        endIntervals[i] = millis();
+        buttonChange[i]=BUTTONDOWN;
+      }
     }
     buttonState[i]=curState;  // save the current button state
   }
@@ -38,30 +49,69 @@ void output(){
 // send a message to Serial if a button state (pressed/released) has changed
 // button pressed: Send button pin number with minus sign
 // button released: Send button pin number
-  byte action;
   for (int i=0;i<NUMBUTTONS;i++)
   {
     switch (buttonChange[i])  
     {
-      case BUTTONUP: Serial.println(buttonPins[i]);Serial.println(buttonState[i]);break;
-      case BUTTONDOWN: Serial.println(-buttonPins[i]);Serial.println(buttonState[i]);break;
+      //this will need to be changed to buttondown with chair
+      //maybe you can split this up if processing gets too messy and follow Input Processing Output format
+      //this will have to change to buttondown, after default state with chair
+      case BUTTONDOWN: {
+          Serial.print(String(i) + "," + String(startIntervals[i]) + "," + String(endIntervals[i]) + "#");
+//        Serial.print(i);
+//        Serial.print(",");
+//        Serial.print(startIntervals[i]);
+//        Serial.print(",");
+//        Serial.print(endIntervals[i]);
+//        Serial.print(">");
+          break; 
+      }
     }
   }
 }
 
-//
-//void isSeatInvalid()
-//{
-//  for (int i = 0; i < NUMBUTTONS; i++)
+//void output(){
+//// send a message to Serial if a button state (pressed/released) has changed
+//// button pressed: Send button pin number with minus sign
+//// button released: Send button pin number
+//  byte action;
+//  Serial.print("<");
+//  for (int i=0;i<NUMBUTTONS;i++)
 //  {
-//    sw
+//    switch (buttonChange[i])  
+//    {
+//      case BUTTONUP: {
+//        //ButtonUP is our indication to send to server on breadboard
+//        Serial.print(toPublish[i]);
+//        Serial.print(",");
+//      }
+//    }
+//  }
+//}
+
+//    switch (buttonChange[i])  
+//    {
+//      case BUTTONUP: {
+//        //ButtonUP is our indication to send to server on breadboard
+//        Serial.println(String(buttonPins[i]);
+//        Serial.println(startIntervals[i]);
+//        Serial.println(endIntervals[i]);
+//        break;
+//        
+//      }
+//      case BUTTONDOWN: {
+//        //ButtonDOWN is our indication to send to server on chair since default state is sitting down
+//        //Serial.println(-buttonPins[i]);break;
+//      }
+//    }
 //  }
 //}
 
 
 void setup()
 {
-  Serial.begin(9600); // initialize Serial at 9600 baud
+  
+  Serial.begin(115200); // initialize Serial at 9600 baud
   // then initialize all buttons
   for (int i=0;i<NUMBUTTONS;i++) pinMode(buttonPins[i],INPUTMODE);
 }
@@ -69,7 +119,7 @@ void setup()
 void loop()
 {
   input();
-
+  
 
 
   output();
